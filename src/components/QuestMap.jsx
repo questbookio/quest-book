@@ -5,8 +5,9 @@ import 'leaflet/dist/leaflet.css';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { acceptQuest, getAllQuestStatuses } from '../services/questService.js';
+import { acceptQuest, getAllQuestStatuses, completeQuestWithPhoto } from '../services/questService.js';
 import QuestDetail from './QuestDetail.jsx';
+import QuestActive from './QuestActive.jsx';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', color: '#ffc857' },
@@ -105,6 +106,8 @@ function QuestMap() {
   const [loading, setLoading] = useState(true);
   const [selectedQuest, setSelectedQuest] = useState(null);
   const [questStatuses, setQuestStatuses] = useState({});
+  const [showActive, setShowActive] = useState(false);
+  const [completedMessage, setCompletedMessage] = useState(null);
 
   // Fetch quests from Firestore
   useEffect(() => {
@@ -148,11 +151,30 @@ function QuestMap() {
     try {
       await acceptQuest(user.uid, quest);
       setQuestStatuses(prev => ({ ...prev, [quest.id]: 'accepted' }));
-      // Update selected quest to show the revealed objective
       setSelectedQuest({ ...quest });
     } catch (err) {
       console.error('Error accepting quest:', err);
     }
+  };
+
+  const handleOpenActive = () => {
+    setShowActive(true);
+  };
+
+  const handleComplete = async (quest, photoFile) => {
+    await completeQuestWithPhoto(user.uid, quest.id, photoFile, quest.xp);
+    setQuestStatuses(prev => ({ ...prev, [quest.id]: 'completed' }));
+    setShowActive(false);
+    setSelectedQuest(null);
+
+    // Show completion message
+    setCompletedMessage({ xp: quest.xp });
+    setTimeout(() => setCompletedMessage(null), 3000);
+  };
+
+  const handleCloseAll = () => {
+    setSelectedQuest(null);
+    setShowActive(false);
   };
 
   return (
@@ -169,7 +191,7 @@ function QuestMap() {
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
         <UserLocationMarker />
-        <MapClickHandler onMapClick={() => setSelectedQuest(null)} />
+        <MapClickHandler onMapClick={handleCloseAll} />
 
         {filtered.map(quest => (
           <Marker
@@ -177,7 +199,10 @@ function QuestMap() {
             position={[quest.lat, quest.lng]}
             icon={createQuestIcon(quest.category, questStatuses[quest.id])}
             eventHandlers={{
-              click: () => setSelectedQuest(quest),
+              click: () => {
+                setShowActive(false);
+                setSelectedQuest(quest);
+              },
             }}
           />
         ))}
@@ -208,13 +233,32 @@ function QuestMap() {
       </div>
 
       {/* Quest detail bottom sheet */}
-      {selectedQuest && (
+      {selectedQuest && !showActive && (
         <QuestDetail
           quest={selectedQuest}
           questStatus={questStatuses[selectedQuest.id] || 'available'}
           onClose={() => setSelectedQuest(null)}
           onAccept={handleAccept}
+          onOpenActive={handleOpenActive}
         />
+      )}
+
+      {/* Active quest sheet with photo upload */}
+      {showActive && selectedQuest && questStatuses[selectedQuest.id] === 'accepted' && (
+        <QuestActive
+          quest={selectedQuest}
+          onComplete={handleComplete}
+          onClose={() => setShowActive(false)}
+        />
+      )}
+
+      {/* Completion toast */}
+      {completedMessage && (
+        <div style={styles.toast}>
+          <span style={styles.toastText}>
+            🎉 Quest Complete! +{completedMessage.xp} XP
+          </span>
+        </div>
       )}
 
       {loading && (
@@ -262,6 +306,25 @@ const styles = {
     whiteSpace: 'nowrap',
     flexShrink: 0,
     transition: 'all 0.2s',
+    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  toast: {
+    position: 'absolute',
+    top: '70px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 3000,
+    padding: '14px 24px',
+    borderRadius: '16px',
+    background: 'rgba(52,211,153,0.15)',
+    border: '1px solid rgba(52,211,153,0.3)',
+    backdropFilter: 'blur(10px)',
+    animation: 'slideUp 0.3s ease-out',
+  },
+  toastText: {
+    color: '#34d399',
+    fontSize: '15px',
+    fontWeight: '700',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
   },
   loadingOverlay: {

@@ -22,7 +22,7 @@ const DIFFICULTY_COLORS = {
   Hard: '#f87171',
 };
 
-function QuestDetail({ quest, questStatus, onClose, onAccept }) {
+function QuestDetail({ quest, questStatus, onClose, onAccept, onOpenActive }) {
   if (!quest) return null;
 
   const catColor = CATEGORY_COLORS[quest.category] || '#ffc857';
@@ -33,12 +33,9 @@ function QuestDetail({ quest, questStatus, onClose, onAccept }) {
 
   return (
     <>
-      {/* Backdrop */}
       <div style={styles.backdrop} onClick={onClose} />
 
-      {/* Bottom sheet */}
       <div style={styles.sheet}>
-        {/* Drag handle */}
         <div style={styles.handleBar}>
           <div style={styles.handle} />
         </div>
@@ -103,7 +100,7 @@ function QuestDetail({ quest, questStatus, onClose, onAccept }) {
           </div>
         )}
 
-        {/* Objective section - changes based on status */}
+        {/* Objective section */}
         {isAccepted || isCompleted ? (
           <div style={styles.objectiveSection}>
             <p style={styles.objectiveLabel}>🎯 QUEST OBJECTIVE</p>
@@ -145,9 +142,9 @@ function QuestDetail({ quest, questStatus, onClose, onAccept }) {
             <span style={styles.completedText}>✅ Quest Complete — {quest.xp} XP Earned</span>
           </div>
         ) : isAccepted ? (
-          <div style={styles.acceptedBanner}>
-            <span style={styles.acceptedText}>⚔️ Quest Active — Go complete it!</span>
-          </div>
+          <button onClick={onOpenActive} style={styles.completeButton}>
+            📸 Complete Quest
+          </button>
         ) : (
           <button onClick={() => onAccept(quest)} style={styles.acceptButton}>
             Accept Quest
@@ -400,18 +397,17 @@ const styles = {
     cursor: 'pointer',
     letterSpacing: '0.5px',
   },
-  acceptedBanner: {
+  completeButton: {
     width: '100%',
     padding: '16px',
     borderRadius: '14px',
-    background: 'rgba(251,191,36,0.08)',
-    border: '1px solid rgba(251,191,36,0.2)',
-    textAlign: 'center',
-  },
-  acceptedText: {
-    color: '#fbbf24',
-    fontSize: '15px',
-    fontWeight: '600',
+    border: 'none',
+    background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
+    color: '#ffffff',
+    fontSize: '17px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    letterSpacing: '0.5px',
   },
   completedBanner: {
     width: '100%',
