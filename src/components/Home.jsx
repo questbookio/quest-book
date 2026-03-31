@@ -4,10 +4,13 @@ import { signOut } from 'firebase/auth';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import QuestMap from './QuestMap.jsx';
 import XpBar from './XpBar.jsx';
+import CreateQuest from './CreateQuest.jsx';
 
 function Home() {
   const { user } = useAuth();
   const [levelUpData, setLevelUpData] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -18,17 +21,38 @@ function Home() {
     setTimeout(() => setLevelUpData(null), 4000);
   }, []);
 
+  const handleQuestCreated = () => {
+    setShowCreate(false);
+    setRefreshKey(k => k + 1);
+  };
+
   return (
     <div style={styles.container}>
-      <QuestMap />
+      <QuestMap key={refreshKey} />
 
       {/* XP Bar */}
       <XpBar onLevelUp={handleLevelUp} />
+
+      {/* Create quest button */}
+      <button
+        onClick={() => setShowCreate(true)}
+        style={styles.createButton}
+      >
+        ＋
+      </button>
 
       {/* Logout button */}
       <button onClick={handleLogout} style={styles.logoutButton}>
         Log Out
       </button>
+
+      {/* Create quest sheet */}
+      {showCreate && (
+        <CreateQuest
+          onClose={() => setShowCreate(false)}
+          onCreated={handleQuestCreated}
+        />
+      )}
 
       {/* Level up notification */}
       {levelUpData && (
@@ -51,6 +75,26 @@ const styles = {
     width: '100%',
     height: '100vh',
     overflow: 'hidden',
+  },
+  createButton: {
+    position: 'absolute',
+    bottom: '90px',
+    right: '16px',
+    zIndex: 1000,
+    width: '52px',
+    height: '52px',
+    borderRadius: '50%',
+    border: 'none',
+    background: 'linear-gradient(135deg, #ffc857 0%, #f0a030 100%)',
+    color: '#0a0a0f',
+    fontSize: '26px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 20px rgba(255,200,87,0.3)',
+    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
   },
   logoutButton: {
     position: 'absolute',
