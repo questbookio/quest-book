@@ -22,12 +22,14 @@ const DIFFICULTY_COLORS = {
   Hard: '#f87171',
 };
 
-function QuestDetail({ quest, onClose, onAccept }) {
+function QuestDetail({ quest, questStatus, onClose, onAccept }) {
   if (!quest) return null;
 
   const catColor = CATEGORY_COLORS[quest.category] || '#ffc857';
   const catIcon = CATEGORY_ICONS[quest.category] || '📍';
   const diffColor = DIFFICULTY_COLORS[quest.difficulty] || '#fbbf24';
+  const isAccepted = questStatus === 'accepted';
+  const isCompleted = questStatus === 'completed';
 
   return (
     <>
@@ -41,16 +43,24 @@ function QuestDetail({ quest, onClose, onAccept }) {
           <div style={styles.handle} />
         </div>
 
-        {/* Category badge */}
+        {/* Category badge + status */}
         <div style={styles.categoryRow}>
-          <span style={{
-            ...styles.categoryBadge,
-            background: `${catColor}15`,
-            border: `1px solid ${catColor}40`,
-            color: catColor,
-          }}>
-            {catIcon} {quest.category?.charAt(0).toUpperCase() + quest.category?.slice(1)}
-          </span>
+          <div style={styles.badgeRow}>
+            <span style={{
+              ...styles.categoryBadge,
+              background: `${catColor}15`,
+              border: `1px solid ${catColor}40`,
+              color: catColor,
+            }}>
+              {catIcon} {quest.category?.charAt(0).toUpperCase() + quest.category?.slice(1)}
+            </span>
+            {isAccepted && (
+              <span style={styles.statusBadgeAccepted}>⚔️ Active</span>
+            )}
+            {isCompleted && (
+              <span style={styles.statusBadgeCompleted}>✅ Completed</span>
+            )}
+          </div>
           <button onClick={onClose} style={styles.closeButton}>✕</button>
         </div>
 
@@ -93,16 +103,31 @@ function QuestDetail({ quest, onClose, onAccept }) {
           </div>
         )}
 
-        {/* Mystery objective section */}
-        <div style={styles.mysterySection}>
-          <div style={styles.lockIcon}>🔒</div>
-          <p style={styles.mysteryTitle}>Objective Hidden</p>
-          <p style={styles.mysteryText}>
-            Travel to this location to reveal what awaits you. The quest objective will unlock when you're within range.
-          </p>
-        </div>
+        {/* Objective section - changes based on status */}
+        {isAccepted || isCompleted ? (
+          <div style={styles.objectiveSection}>
+            <p style={styles.objectiveLabel}>🎯 QUEST OBJECTIVE</p>
+            <p style={styles.objectiveText}>{quest.objective}</p>
+            {quest.bonusObjectives && quest.bonusObjectives.length > 0 && (
+              <div style={styles.bonusSection}>
+                <p style={styles.bonusLabel}>⭐ BONUS OBJECTIVES</p>
+                {quest.bonusObjectives.map((bonus, i) => (
+                  <p key={i} style={styles.bonusItem}>• {bonus}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={styles.mysterySection}>
+            <div style={styles.lockIcon}>🔒</div>
+            <p style={styles.mysteryTitle}>Objective Hidden</p>
+            <p style={styles.mysteryText}>
+              Accept this quest to reveal what awaits you. Travel to the location to complete it.
+            </p>
+          </div>
+        )}
 
-        {/* Required items (if any) */}
+        {/* Required items */}
         {quest.requiredItems && quest.requiredItems.length > 0 && (
           <div style={styles.itemsSection}>
             <p style={styles.itemsLabel}>REQUIRED ITEMS</p>
@@ -114,10 +139,20 @@ function QuestDetail({ quest, onClose, onAccept }) {
           </div>
         )}
 
-        {/* Accept button */}
-        <button onClick={() => onAccept(quest)} style={styles.acceptButton}>
-          Accept Quest
-        </button>
+        {/* Action button */}
+        {isCompleted ? (
+          <div style={styles.completedBanner}>
+            <span style={styles.completedText}>✅ Quest Complete — {quest.xp} XP Earned</span>
+          </div>
+        ) : isAccepted ? (
+          <div style={styles.acceptedBanner}>
+            <span style={styles.acceptedText}>⚔️ Quest Active — Go complete it!</span>
+          </div>
+        ) : (
+          <button onClick={() => onAccept(quest)} style={styles.acceptButton}>
+            Accept Quest
+          </button>
+        )}
       </div>
     </>
   );
@@ -138,7 +173,7 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    maxHeight: '80vh',
+    maxHeight: '85vh',
     overflowY: 'auto',
     background: 'linear-gradient(180deg, #1a1a2e 0%, #12121f 100%)',
     borderRadius: '20px 20px 0 0',
@@ -165,12 +200,35 @@ const styles = {
     alignItems: 'center',
     marginBottom: '16px',
   },
+  badgeRow: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+  },
   categoryBadge: {
     padding: '6px 14px',
     borderRadius: '20px',
     fontSize: '13px',
     fontWeight: '600',
     letterSpacing: '0.5px',
+  },
+  statusBadgeAccepted: {
+    padding: '6px 12px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '600',
+    background: 'rgba(251,191,36,0.1)',
+    border: '1px solid rgba(251,191,36,0.3)',
+    color: '#fbbf24',
+  },
+  statusBadgeCompleted: {
+    padding: '6px 12px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '600',
+    background: 'rgba(52,211,153,0.1)',
+    border: '1px solid rgba(52,211,153,0.3)',
+    color: '#34d399',
   },
   closeButton: {
     background: 'rgba(255,255,255,0.08)',
@@ -271,6 +329,42 @@ const styles = {
     color: 'rgba(255,255,255,0.45)',
     lineHeight: '1.5',
   },
+  objectiveSection: {
+    padding: '20px 16px',
+    borderRadius: '16px',
+    background: 'rgba(52,211,153,0.04)',
+    border: '1px solid rgba(52,211,153,0.15)',
+    marginBottom: '20px',
+  },
+  objectiveLabel: {
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#34d399',
+    letterSpacing: '1.5px',
+    marginBottom: '10px',
+  },
+  objectiveText: {
+    fontSize: '15px',
+    color: '#ffffff',
+    lineHeight: '1.6',
+  },
+  bonusSection: {
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+  },
+  bonusLabel: {
+    fontSize: '10px',
+    fontWeight: '700',
+    color: 'rgba(255,200,87,0.6)',
+    letterSpacing: '1.5px',
+    marginBottom: '8px',
+  },
+  bonusItem: {
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.55)',
+    lineHeight: '1.8',
+  },
   itemsSection: {
     marginBottom: '20px',
   },
@@ -305,6 +399,32 @@ const styles = {
     fontWeight: '700',
     cursor: 'pointer',
     letterSpacing: '0.5px',
+  },
+  acceptedBanner: {
+    width: '100%',
+    padding: '16px',
+    borderRadius: '14px',
+    background: 'rgba(251,191,36,0.08)',
+    border: '1px solid rgba(251,191,36,0.2)',
+    textAlign: 'center',
+  },
+  acceptedText: {
+    color: '#fbbf24',
+    fontSize: '15px',
+    fontWeight: '600',
+  },
+  completedBanner: {
+    width: '100%',
+    padding: '16px',
+    borderRadius: '14px',
+    background: 'rgba(52,211,153,0.08)',
+    border: '1px solid rgba(52,211,153,0.2)',
+    textAlign: 'center',
+  },
+  completedText: {
+    color: '#34d399',
+    fontSize: '15px',
+    fontWeight: '600',
   },
 };
 

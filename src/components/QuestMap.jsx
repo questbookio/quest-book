@@ -4,6 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { acceptQuest, getAllQuestStatuses } from '../services/questService.js';
 import QuestDetail from './QuestDetail.jsx';
 
 const CATEGORIES = [
@@ -20,13 +22,20 @@ function getCategoryColor(category) {
   return cat ? cat.color : '#ffc857';
 }
 
-function createQuestIcon(category) {
+function createQuestIcon(category, status) {
   const color = getCategoryColor(category);
+  const opacity = status === 'completed' ? '0.4' : '1';
+  const checkmark = status === 'completed'
+    ? '<text x="16" y="19" text-anchor="middle" fill="white" font-size="12" font-weight="bold">✓</text>'
+    : status === 'accepted'
+    ? '<circle cx="16" cy="15" r="5" fill="white"/><circle cx="16" cy="15" r="3" fill="' + color + '"/>'
+    : '<circle cx="16" cy="15" r="5" fill="white"/>';
+
   const svg = `
-    <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+    <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" opacity="${opacity}">
       <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24s16-12 16-24C32 7.16 24.84 0 16 0z" fill="${color}"/>
       <circle cx="16" cy="15" r="7" fill="rgba(0,0,0,0.3)"/>
-      <circle cx="16" cy="15" r="5" fill="white"/>
+      ${checkmark}
     </svg>
   `;
   return L.divIcon({
@@ -90,11 +99,14 @@ function MapClickHandler({ onMapClick }) {
 }
 
 function QuestMap() {
+  const { user } = useAuth();
   const [quests, setQuests] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [selectedQuest, setSelectedQuest] = useState(null);
+  const [questStatuses, setQuestStatuses] = useState({});
 
+  // Fetch quests from Firestore
   useEffect(() => {
     const fetchQuests = async () => {
       try {
@@ -112,16 +124,35 @@ function QuestMap() {
     fetchQuests();
   }, []);
 
+  // Fetch user's quest statuses
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      if (!user) return;
+      try {
+        const statuses = await getAllQuestStatuses(user.uid);
+        setQuestStatuses(statuses);
+      } catch (err) {
+        console.error('Error fetching quest statuses:', err);
+      }
+    };
+    fetchStatuses();
+  }, [user]);
+
   const filtered = filter === 'all'
     ? quests
     : quests.filter(q => q.category === filter);
 
   const defaultCenter = [26.1224, -80.1373];
 
-  const handleAccept = (quest) => {
-    // Will be wired up in Session 6
-    alert(`Quest accepted! (Tracking coming in Session 6)`);
-    setSelectedQuest(null);
+  const handleAccept = async (quest) => {
+    try {
+      await acceptQuest(user.uid, quest);
+      setQuestStatuses(prev => ({ ...prev, [quest.id]: 'accepted' }));
+      // Update selected quest to show the revealed objective
+      setSelectedQuest({ ...quest });
+    } catch (err) {
+      console.error('Error accepting quest:', err);
+    }
   };
 
   return (
@@ -144,7 +175,7 @@ function QuestMap() {
           <Marker
             key={quest.id}
             position={[quest.lat, quest.lng]}
-            icon={createQuestIcon(quest.category)}
+            icon={createQuestIcon(quest.category, questStatuses[quest.id])}
             eventHandlers={{
               click: () => setSelectedQuest(quest),
             }}
@@ -180,6 +211,7 @@ function QuestMap() {
       {selectedQuest && (
         <QuestDetail
           quest={selectedQuest}
+          questStatus={questStatuses[selectedQuest.id] || 'available'}
           onClose={() => setSelectedQuest(null)}
           onAccept={handleAccept}
         />
