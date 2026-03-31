@@ -1,24 +1,46 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import QuestMap from './QuestMap.jsx';
+import XpBar from './XpBar.jsx';
 
 function Home() {
   const { user } = useAuth();
+  const [levelUpData, setLevelUpData] = useState(null);
 
   const handleLogout = async () => {
     await signOut(auth);
   };
 
+  const handleLevelUp = useCallback((newLevel) => {
+    setLevelUpData(newLevel);
+    setTimeout(() => setLevelUpData(null), 4000);
+  }, []);
+
   return (
     <div style={styles.container}>
       <QuestMap />
 
-      {/* Floating logout button */}
+      {/* XP Bar */}
+      <XpBar onLevelUp={handleLevelUp} />
+
+      {/* Logout button */}
       <button onClick={handleLogout} style={styles.logoutButton}>
         Log Out
       </button>
+
+      {/* Level up notification */}
+      {levelUpData && (
+        <div style={styles.levelUpOverlay}>
+          <div style={styles.levelUpCard}>
+            <div style={styles.levelUpIcon}>{levelUpData.icon}</div>
+            <p style={styles.levelUpTitle}>LEVEL UP!</p>
+            <p style={styles.levelUpName}>{levelUpData.name}</p>
+            <p style={styles.levelUpSubtext}>Keep exploring to reach the next rank</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -32,19 +54,63 @@ const styles = {
   },
   logoutButton: {
     position: 'absolute',
-    bottom: '24px',
+    bottom: '28px',
     right: '16px',
     zIndex: 1000,
-    padding: '10px 20px',
-    borderRadius: '20px',
-    border: '1px solid rgba(239,68,68,0.3)',
-    background: 'rgba(10,10,15,0.85)',
+    padding: '10px 16px',
+    borderRadius: '16px',
+    border: '1px solid rgba(239,68,68,0.2)',
+    background: 'rgba(10,10,15,0.9)',
     backdropFilter: 'blur(10px)',
     color: '#f87171',
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: '600',
     cursor: 'pointer',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  levelUpOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(0,0,0,0.7)',
+    zIndex: 5000,
+    animation: 'fadeIn 0.3s ease-out',
+  },
+  levelUpCard: {
+    textAlign: 'center',
+    padding: '40px 48px',
+    borderRadius: '24px',
+    background: 'linear-gradient(180deg, #1a1a2e 0%, #12121f 100%)',
+    border: '1px solid rgba(255,200,87,0.3)',
+    boxShadow: '0 0 60px rgba(255,200,87,0.15)',
+    animation: 'slideUp 0.4s ease-out',
+    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  levelUpIcon: {
+    fontSize: '56px',
+    marginBottom: '16px',
+  },
+  levelUpTitle: {
+    fontSize: '12px',
+    fontWeight: '800',
+    color: '#ffc857',
+    letterSpacing: '3px',
+    marginBottom: '8px',
+  },
+  levelUpName: {
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: '8px',
+  },
+  levelUpSubtext: {
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.4)',
   },
 };
 
