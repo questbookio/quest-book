@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-function QuestActive({ quest, onComplete, onClose }) {
+function QuestActive({ quest, isInRange, distance, formatDistance, onComplete, onClose }) {
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -11,7 +11,6 @@ function QuestActive({ quest, onComplete, onClose }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setError('Photo must be under 10MB');
       return;
@@ -20,7 +19,6 @@ function QuestActive({ quest, onComplete, onClose }) {
     setPhoto(file);
     setError('');
 
-    // Create preview
     const reader = new FileReader();
     reader.onload = (ev) => setPreview(ev.target.result);
     reader.readAsDataURL(file);
@@ -39,6 +37,10 @@ function QuestActive({ quest, onComplete, onClose }) {
       setError('Upload a photo to complete this quest');
       return;
     }
+    if (!isInRange) {
+      setError('You need to be at the quest location to complete it');
+      return;
+    }
     setUploading(true);
     setError('');
     try {
@@ -48,6 +50,8 @@ function QuestActive({ quest, onComplete, onClose }) {
       setUploading(false);
     }
   };
+
+  const canComplete = photo && isInRange;
 
   return (
     <>
@@ -67,6 +71,39 @@ function QuestActive({ quest, onComplete, onClose }) {
             </p>
           </div>
           <button onClick={onClose} style={styles.closeButton}>✕</button>
+        </div>
+
+        {/* GPS proximity indicator */}
+        <div style={{
+          ...styles.proximityBar,
+          background: isInRange
+            ? 'rgba(52,211,153,0.08)'
+            : 'rgba(251,191,36,0.08)',
+          borderColor: isInRange
+            ? 'rgba(52,211,153,0.2)'
+            : 'rgba(251,191,36,0.2)',
+        }}>
+          {isInRange ? (
+            <div style={styles.proximityContent}>
+              <span style={styles.proximityIconGreen}>📍</span>
+              <div>
+                <p style={styles.proximityTitleGreen}>You're here!</p>
+                <p style={styles.proximitySubtext}>You're within range to complete this quest</p>
+              </div>
+            </div>
+          ) : (
+            <div style={styles.proximityContent}>
+              <span style={styles.proximityIconYellow}>📍</span>
+              <div>
+                <p style={styles.proximityTitleYellow}>
+                  {distance !== null && distance !== undefined
+                    ? formatDistance(distance)
+                    : 'Locating you...'}
+                </p>
+                <p style={styles.proximitySubtext}>Travel to the quest location to complete it</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Objective */}
@@ -125,14 +162,20 @@ function QuestActive({ quest, onComplete, onClose }) {
         {/* Complete button */}
         <button
           onClick={handleComplete}
-          disabled={uploading || !photo}
+          disabled={uploading || !canComplete}
           style={{
             ...styles.completeButton,
-            opacity: (uploading || !photo) ? 0.5 : 1,
-            cursor: (uploading || !photo) ? 'not-allowed' : 'pointer',
+            opacity: (uploading || !canComplete) ? 0.4 : 1,
+            cursor: (uploading || !canComplete) ? 'not-allowed' : 'pointer',
           }}
         >
-          {uploading ? 'Uploading...' : 'Complete Quest'}
+          {uploading
+            ? 'Uploading...'
+            : !isInRange
+            ? '📍 Get closer to complete'
+            : !photo
+            ? '📸 Upload photo to complete'
+            : '✅ Complete Quest'}
         </button>
       </div>
     </>
@@ -179,7 +222,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: '20px',
+    marginBottom: '16px',
   },
   activeLabel: {
     fontSize: '10px',
@@ -205,6 +248,39 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  proximityBar: {
+    padding: '14px 16px',
+    borderRadius: '14px',
+    border: '1px solid',
+    marginBottom: '16px',
+  },
+  proximityContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  proximityIconGreen: {
+    fontSize: '24px',
+  },
+  proximityIconYellow: {
+    fontSize: '24px',
+  },
+  proximityTitleGreen: {
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#34d399',
+    marginBottom: '2px',
+  },
+  proximityTitleYellow: {
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#fbbf24',
+    marginBottom: '2px',
+  },
+  proximitySubtext: {
+    fontSize: '12px',
+    color: 'rgba(255,255,255,0.35)',
+  },
   objectiveSection: {
     padding: '16px',
     borderRadius: '14px',
@@ -229,7 +305,7 @@ const styles = {
     borderRadius: '14px',
     background: 'rgba(255,200,87,0.04)',
     border: '1px solid rgba(255,200,87,0.1)',
-    marginBottom: '20px',
+    marginBottom: '16px',
   },
   bonusLabel: {
     fontSize: '10px',

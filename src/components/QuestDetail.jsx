@@ -22,7 +22,7 @@ const DIFFICULTY_COLORS = {
   Hard: '#f87171',
 };
 
-function QuestDetail({ quest, questStatus, onClose, onAccept, onOpenActive }) {
+function QuestDetail({ quest, questStatus, distance, formatDistance, onClose, onAccept, onOpenActive }) {
   if (!quest) return null;
 
   const catColor = CATEGORY_COLORS[quest.category] || '#ffc857';
@@ -60,6 +60,14 @@ function QuestDetail({ quest, questStatus, onClose, onAccept, onOpenActive }) {
           </div>
           <button onClick={onClose} style={styles.closeButton}>✕</button>
         </div>
+
+        {/* Distance indicator */}
+        {distance !== null && distance !== undefined && (
+          <div style={styles.distanceRow}>
+            <span style={styles.distanceIcon}>📍</span>
+            <span style={styles.distanceText}>{formatDistance(distance)}</span>
+          </div>
+        )}
 
         {/* Hint */}
         <div style={styles.hintSection}>
@@ -195,7 +203,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '16px',
+    marginBottom: '12px',
   },
   badgeRow: {
     display: 'flex',
@@ -239,6 +247,20 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  distanceRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginBottom: '16px',
+  },
+  distanceIcon: {
+    fontSize: '14px',
+  },
+  distanceText: {
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.45)',
+    fontWeight: '500',
   },
   hintSection: {
     marginBottom: '20px',

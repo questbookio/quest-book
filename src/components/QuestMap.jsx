@@ -48,7 +48,7 @@ function createQuestIcon(category, status) {
   });
 }
 
-function UserLocationMarker() {
+function UserLocationTracker({ onLocationUpdate }) {
   const [position, setPosition] = useState(null);
   const map = useMap();
   const hasFlown = useRef(false);
@@ -58,6 +58,7 @@ function UserLocationMarker() {
 
     map.on('locationfound', (e) => {
       setPosition(e.latlng);
+      onLocationUpdate(e.latlng);
       if (!hasFlown.current) {
         map.flyTo(e.latlng, 14);
         hasFlown.current = true;
@@ -67,7 +68,7 @@ function UserLocationMarker() {
     return () => {
       map.stopLocate();
     };
-  }, [map]);
+  }, [map, onLocationUpdate]);
 
   if (!position) return null;
 
@@ -99,6 +100,29 @@ function MapClickHandler({ onMapClick }) {
   return null;
 }
 
+// Calculate distance between two points in meters
+function getDistanceMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function formatDistance(meters) {
+  if (meters < 1000) {
+    return `${Math.round(meters)}m away`;
+  }
+  const miles = meters / 1609.34;
+  if (miles < 10) {
+    return `${miles.toFixed(1)} mi away`;
+  }
+  return `${Math.round(miles)} mi away`;
+}
+
 function QuestMap() {
   const { user } = useAuth();
   const [quests, setQuests] = useState([]);
@@ -108,8 +132,8 @@ function QuestMap() {
   const [questStatuses, setQuestStatuses] = useState({});
   const [showActive, setShowActive] = useState(false);
   const [completedMessage, setCompletedMessage] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
 
-  // Fetch quests from Firestore
   useEffect(() => {
     const fetchQuests = async () => {
       try {
@@ -127,7 +151,6 @@ function QuestMap() {
     fetchQuests();
   }, []);
 
-  // Fetch user's quest statuses
   useEffect(() => {
     const fetchStatuses = async () => {
       if (!user) return;
@@ -146,6 +169,18 @@ function QuestMap() {
     : quests.filter(q => q.category === filter);
 
   const defaultCenter = [26.1224, -80.1373];
+
+  const getQuestDistance = (quest) => {
+    if (!userLocation) return null;
+    return getDistanceMeters(userLocation.lat, userLocation.lng, quest.lat, quest.lng);
+  };
+
+  const isWithinRange = (quest) => {
+    const distance = getQuestDistance(quest);
+    if (distance === null) return false;
+    const radius = quest.radius || 200; // default 200 meters
+    return distance <= radius;
+  };
 
   const handleAccept = async (quest) => {
     try {
@@ -166,8 +201,6 @@ function QuestMap() {
     setQuestStatuses(prev => ({ ...prev, [quest.id]: 'completed' }));
     setShowActive(false);
     setSelectedQuest(null);
-
-    // Show completion message
     setCompletedMessage({ xp: quest.xp });
     setTimeout(() => setCompletedMessage(null), 3000);
   };
@@ -176,6 +209,10 @@ function QuestMap() {
     setSelectedQuest(null);
     setShowActive(false);
   };
+
+  const handleLocationUpdate = useRef((latlng) => {
+    setUserLocation(latlng);
+  }).current;
 
   return (
     <div style={styles.wrapper}>
@@ -190,7 +227,7 @@ function QuestMap() {
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
-        <UserLocationMarker />
+        <UserLocationTracker onLocationUpdate={handleLocationUpdate} />
         <MapClickHandler onMapClick={handleCloseAll} />
 
         {filtered.map(quest => (
@@ -237,6 +274,8 @@ function QuestMap() {
         <QuestDetail
           quest={selectedQuest}
           questStatus={questStatuses[selectedQuest.id] || 'available'}
+          distance={getQuestDistance(selectedQuest)}
+          formatDistance={formatDistance}
           onClose={() => setSelectedQuest(null)}
           onAccept={handleAccept}
           onOpenActive={handleOpenActive}
@@ -247,6 +286,9 @@ function QuestMap() {
       {showActive && selectedQuest && questStatuses[selectedQuest.id] === 'accepted' && (
         <QuestActive
           quest={selectedQuest}
+          isInRange={isWithinRange(selectedQuest)}
+          distance={getQuestDistance(selectedQuest)}
+          formatDistance={formatDistance}
           onComplete={handleComplete}
           onClose={() => setShowActive(false)}
         />
