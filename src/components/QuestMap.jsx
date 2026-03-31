@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import QuestDetail from './QuestDetail.jsx';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', color: '#ffc857' },
@@ -79,10 +80,20 @@ function UserLocationMarker() {
   return <Marker position={position} icon={userIcon} />;
 }
 
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
+  return null;
+}
+
 function QuestMap() {
   const [quests, setQuests] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [selectedQuest, setSelectedQuest] = useState(null);
 
   useEffect(() => {
     const fetchQuests = async () => {
@@ -107,6 +118,12 @@ function QuestMap() {
 
   const defaultCenter = [26.1224, -80.1373];
 
+  const handleAccept = (quest) => {
+    // Will be wired up in Session 6
+    alert(`Quest accepted! (Tracking coming in Session 6)`);
+    setSelectedQuest(null);
+  };
+
   return (
     <div style={styles.wrapper}>
       <MapContainer
@@ -121,34 +138,17 @@ function QuestMap() {
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
         <UserLocationMarker />
+        <MapClickHandler onMapClick={() => setSelectedQuest(null)} />
 
         {filtered.map(quest => (
           <Marker
             key={quest.id}
             position={[quest.lat, quest.lng]}
             icon={createQuestIcon(quest.category)}
-          >
-            <Popup>
-              <div style={styles.popup}>
-                <div style={{
-                  ...styles.popupCategory,
-                  color: getCategoryColor(quest.category)
-                }}>
-                  {quest.category?.toUpperCase()}
-                </div>
-                <div style={styles.popupHint}>{quest.hint}</div>
-                <div style={styles.popupMeta}>
-                  <span style={styles.popupDifficulty}>{quest.difficulty}</span>
-                  <span style={styles.popupXp}>{quest.xp} XP</span>
-                </div>
-                {quest.cost && (
-                  <div style={styles.popupCost}>
-                    {quest.cost === 'Free' ? '🆓 Free' : `💰 ${quest.cost}`}
-                  </div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
+            eventHandlers={{
+              click: () => setSelectedQuest(quest),
+            }}
+          />
         ))}
       </MapContainer>
 
@@ -175,6 +175,15 @@ function QuestMap() {
           </button>
         ))}
       </div>
+
+      {/* Quest detail bottom sheet */}
+      {selectedQuest && (
+        <QuestDetail
+          quest={selectedQuest}
+          onClose={() => setSelectedQuest(null)}
+          onAccept={handleAccept}
+        />
+      )}
 
       {loading && (
         <div style={styles.loadingOverlay}>
@@ -222,43 +231,6 @@ const styles = {
     flexShrink: 0,
     transition: 'all 0.2s',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-  },
-  popup: {
-    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-    minWidth: '180px',
-  },
-  popupCategory: {
-    fontSize: '10px',
-    fontWeight: '700',
-    letterSpacing: '1.5px',
-    marginBottom: '6px',
-  },
-  popupHint: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#1a1a2e',
-    lineHeight: '1.4',
-    marginBottom: '8px',
-  },
-  popupMeta: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-  },
-  popupDifficulty: {
-    fontSize: '11px',
-    color: '#666',
-    fontWeight: '500',
-  },
-  popupXp: {
-    fontSize: '11px',
-    color: '#f0a030',
-    fontWeight: '700',
-  },
-  popupCost: {
-    fontSize: '11px',
-    color: '#888',
-    marginTop: '4px',
   },
   loadingOverlay: {
     position: 'absolute',
