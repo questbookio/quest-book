@@ -7,6 +7,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { acceptQuest, getAllQuestStatuses, completeQuestWithPhoto } from '../services/questService.js';
 import { logActivity } from '../services/socialService.js';
+import { checkAchievements, getUserStats, incrementCategoryCount } from '../services/achievementService.js';
 import QuestDetail from './QuestDetail.jsx';
 import QuestActive from './QuestActive.jsx';
 
@@ -124,7 +125,7 @@ function formatDistance(meters) {
   return `${Math.round(miles)} mi away`;
 }
 
-function QuestMap({ onUserLocation }) {
+function QuestMap({ onAchievement }) {
   const { user } = useAuth();
   const [quests, setQuests] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -211,6 +212,14 @@ function QuestMap({ onUserLocation }) {
       const userSnap = await fbGetDoc(userRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
       await logActivity(user.uid, userData.displayName, userData.avatar, quest);
+
+      // Track category and check achievements
+      await incrementCategoryCount(user.uid, quest.category);
+      const stats = await getUserStats(user.uid);
+      const newAchievements = await checkAchievements(user.uid, stats);
+      if (newAchievements.length > 0 && onAchievement) {
+        onAchievement(newAchievements[0]);
+      }
     } catch (err) {
       console.error('Error logging activity:', err);
     }
@@ -223,7 +232,6 @@ function QuestMap({ onUserLocation }) {
 
   const handleLocationUpdate = useRef((latlng) => {
     setUserLocation(latlng);
-    if (onUserLocation) onUserLocation(latlng);
   }).current;
 
   return (
