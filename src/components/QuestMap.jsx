@@ -125,7 +125,7 @@ function formatDistance(meters) {
   return `${Math.round(miles)} mi away`;
 }
 
-function QuestMap({ onAchievement }) {
+function QuestMap({ onAchievement, focusQuestId, onFocusHandled }) {
   const { user } = useAuth();
   const [quests, setQuests] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -164,6 +164,18 @@ function QuestMap({ onAchievement }) {
     };
     fetchStatuses();
   }, [user]);
+
+  // Handle focus on a specific quest (from featured quests)
+  useEffect(() => {
+    if (focusQuestId && quests.length > 0) {
+      const quest = quests.find(q => q.id === focusQuestId);
+      if (quest) {
+        setSelectedQuest(quest);
+        setShowActive(false);
+      }
+      if (onFocusHandled) onFocusHandled();
+    }
+  }, [focusQuestId, quests, onFocusHandled]);
 
   const filtered = filter === 'all'
     ? quests

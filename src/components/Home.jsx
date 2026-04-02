@@ -12,6 +12,7 @@ import SocialFeed from './SocialFeed.jsx';
 import AdventureMode from './AdventureMode.jsx';
 import Achievements from './Achievements.jsx';
 import AchievementToast from './AchievementToast.jsx';
+import FeaturedQuests from './FeaturedQuests.jsx';
 
 const ADMIN_UIDS = [
   'RkUgAmQMLxOB9OM1z4cd9GJqqM53',
@@ -27,10 +28,12 @@ function Home() {
   const [showFeed, setShowFeed] = useState(false);
   const [showAdventure, setShowAdventure] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showFeatured, setShowFeatured] = useState(false);
   const [achievementToast, setAchievementToast] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const [focusQuestId, setFocusQuestId] = useState(null);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -73,9 +76,14 @@ function Home() {
     setAchievementToast(achievement);
   }, []);
 
+  const handleSelectFeaturedQuest = (questId) => {
+    setShowFeatured(false);
+    setFocusQuestId(questId);
+  };
+
   return (
     <div style={styles.container}>
-      <QuestMap key={refreshKey} onAchievement={handleAchievement} />
+      <QuestMap key={refreshKey} onAchievement={handleAchievement} focusQuestId={focusQuestId} onFocusHandled={() => setFocusQuestId(null)} />
 
       {/* XP Bar */}
       <XpBar onLevelUp={handleLevelUp} />
@@ -87,6 +95,9 @@ function Home() {
         <button onClick={() => setShowFeed(true)} style={styles.topButton}>📡</button>
         <button onClick={() => setShowAchievements(true)} style={styles.topButton}>🏅</button>
       </div>
+
+      {/* Featured quests button */}
+      <button onClick={() => setShowFeatured(true)} style={styles.featuredButton}>⭐</button>
 
       {/* Adventure mode button */}
       <button onClick={() => setShowAdventure(true)} style={styles.adventureButton}>⚡</button>
@@ -108,15 +119,13 @@ function Home() {
       {showFeed && <SocialFeed onClose={() => setShowFeed(false)} />}
       {showAdventure && <AdventureMode onClose={handleAdventureClose} userLocation={userLocation} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
+      {showFeatured && <FeaturedQuests onClose={() => setShowFeatured(false)} onSelectQuest={handleSelectFeaturedQuest} />}
       {showCreate && <CreateQuest onClose={() => setShowCreate(false)} onCreated={handleQuestCreated} />}
       {showAdmin && <AdminPanel onClose={handleAdminClose} />}
 
       {/* Achievement toast */}
       {achievementToast && (
-        <AchievementToast
-          achievement={achievementToast}
-          onDismiss={() => setAchievementToast(null)}
-        />
+        <AchievementToast achievement={achievementToast} onDismiss={() => setAchievementToast(null)} />
       )}
 
       {/* Toast */}
@@ -162,6 +171,23 @@ const styles = {
     height: '44px',
     borderRadius: '50%',
     border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(10,10,15,0.9)',
+    backdropFilter: 'blur(10px)',
+    fontSize: '20px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredButton: {
+    position: 'absolute',
+    bottom: '150px',
+    left: '16px',
+    zIndex: 1000,
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    border: '1px solid rgba(255,200,87,0.3)',
     background: 'rgba(10,10,15,0.9)',
     backdropFilter: 'blur(10px)',
     fontSize: '20px',
