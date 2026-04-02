@@ -13,6 +13,8 @@ import AdventureMode from './AdventureMode.jsx';
 import Achievements from './Achievements.jsx';
 import AchievementToast from './AchievementToast.jsx';
 import FeaturedQuests from './FeaturedQuests.jsx';
+import NotificationCenter from './NotificationCenter.jsx';
+import { getUnreadCount } from '../services/notificationService.js';
 
 const ADMIN_UIDS = [
   'RkUgAmQMLxOB9OM1z4cd9GJqqM53',
@@ -29,11 +31,13 @@ function Home() {
   const [showAdventure, setShowAdventure] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showFeatured, setShowFeatured] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [achievementToast, setAchievementToast] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [focusQuestId, setFocusQuestId] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -44,6 +48,18 @@ function Home() {
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  // Poll unread count
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      const count = await getUnreadCount(user.uid);
+      setUnreadCount(count);
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const isAdmin = ADMIN_UIDS.includes(user?.uid);
 
@@ -74,6 +90,7 @@ function Home() {
 
   const handleAchievement = useCallback((achievement) => {
     setAchievementToast(achievement);
+    setUnreadCount(c => c + 1);
   }, []);
 
   const handleSelectFeaturedQuest = (questId) => {
@@ -94,6 +111,14 @@ function Home() {
         <button onClick={() => setShowLeaderboard(true)} style={styles.topButton}>🏆</button>
         <button onClick={() => setShowFeed(true)} style={styles.topButton}>📡</button>
         <button onClick={() => setShowAchievements(true)} style={styles.topButton}>🏅</button>
+        <div style={styles.bellWrapper}>
+          <button onClick={() => setShowNotifications(true)} style={styles.topButton}>🔔</button>
+          {unreadCount > 0 && (
+            <div style={styles.unreadBadge}>
+              <span style={styles.unreadText}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Featured quests button */}
@@ -120,6 +145,7 @@ function Home() {
       {showAdventure && <AdventureMode onClose={handleAdventureClose} userLocation={userLocation} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showFeatured && <FeaturedQuests onClose={() => setShowFeatured(false)} onSelectQuest={handleSelectFeaturedQuest} />}
+      {showNotifications && <NotificationCenter onClose={() => setShowNotifications(false)} onUnreadChange={setUnreadCount} />}
       {showCreate && <CreateQuest onClose={() => setShowCreate(false)} onCreated={handleQuestCreated} />}
       {showAdmin && <AdminPanel onClose={handleAdminClose} />}
 
@@ -178,6 +204,29 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bellWrapper: {
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: '-2px',
+    right: '-2px',
+    minWidth: '18px',
+    height: '18px',
+    borderRadius: '9px',
+    background: '#f87171',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 4px',
+    border: '2px solid #0a0a0f',
+  },
+  unreadText: {
+    fontSize: '10px',
+    fontWeight: '800',
+    color: '#ffffff',
+    lineHeight: 1,
   },
   featuredButton: {
     position: 'absolute',

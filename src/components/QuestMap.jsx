@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { acceptQuest, getAllQuestStatuses, completeQuestWithPhoto } from '../services/questService.js';
 import { logActivity } from '../services/socialService.js';
 import { checkAchievements, getUserStats, incrementCategoryCount } from '../services/achievementService.js';
+import { notifyQuestComplete, notifyAchievement } from '../services/notificationService.js';
 import QuestDetail from './QuestDetail.jsx';
 import QuestActive from './QuestActive.jsx';
 
@@ -225,12 +226,16 @@ function QuestMap({ onAchievement, focusQuestId, onFocusHandled }) {
       const userData = userSnap.exists() ? userSnap.data() : {};
       await logActivity(user.uid, userData.displayName, userData.avatar, quest);
 
+      // Store notification
+      await notifyQuestComplete(user.uid, quest.hint, quest.xp);
+
       // Track category and check achievements
       await incrementCategoryCount(user.uid, quest.category);
       const stats = await getUserStats(user.uid);
       const newAchievements = await checkAchievements(user.uid, stats);
-      if (newAchievements.length > 0 && onAchievement) {
-        onAchievement(newAchievements[0]);
+      if (newAchievements.length > 0) {
+        if (onAchievement) onAchievement(newAchievements[0]);
+        await notifyAchievement(user.uid, newAchievements[0].name, newAchievements[0].icon);
       }
     } catch (err) {
       console.error('Error logging activity:', err);
