@@ -124,7 +124,7 @@ function formatDistance(meters) {
   return `${Math.round(miles)} mi away`;
 }
 
-function QuestMap() {
+function QuestMap({ onUserLocation }) {
   const { user } = useAuth();
   const [quests, setQuests] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -223,6 +223,7 @@ function QuestMap() {
 
   const handleLocationUpdate = useRef((latlng) => {
     setUserLocation(latlng);
+    if (onUserLocation) onUserLocation(latlng);
   }).current;
 
   return (
