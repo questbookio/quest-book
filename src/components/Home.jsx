@@ -7,6 +7,7 @@ import XpBar from './XpBar.jsx';
 import CreateQuest from './CreateQuest.jsx';
 import AdminPanel from './AdminPanel.jsx';
 import Profile from './Profile.jsx';
+import Leaderboard from './Leaderboard.jsx';
 
 const ADMIN_UIDS = [
   'RkUgAmQMLxOB9OM1z4cd9GJqqM53',
@@ -18,6 +19,7 @@ function Home() {
   const [showCreate, setShowCreate] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState(null);
 
@@ -50,54 +52,36 @@ function Home() {
       {/* XP Bar */}
       <XpBar onLevelUp={handleLevelUp} />
 
-      {/* Profile button */}
-      <button
-        onClick={() => setShowProfile(true)}
-        style={styles.profileButton}
-      >
-        👤
-      </button>
+      {/* Top right buttons */}
+      <div style={styles.topButtons}>
+        <button onClick={() => setShowProfile(true)} style={styles.topButton}>👤</button>
+        <button onClick={() => setShowLeaderboard(true)} style={styles.topButton}>🏆</button>
+      </div>
 
       {/* Admin button */}
       {isAdmin && (
-        <button
-          onClick={() => setShowAdmin(true)}
-          style={styles.adminButton}
-        >
-          🛡️
-        </button>
+        <button onClick={() => setShowAdmin(true)} style={styles.adminButton}>🛡️</button>
       )}
 
       {/* Create quest button */}
-      <button
-        onClick={() => setShowCreate(true)}
-        style={styles.createButton}
-      >
-        ＋
-      </button>
+      <button onClick={() => setShowCreate(true)} style={styles.createButton}>＋</button>
 
       {/* Logout button */}
-      <button onClick={handleLogout} style={styles.logoutButton}>
-        Log Out
-      </button>
+      <button onClick={handleLogout} style={styles.logoutButton}>Log Out</button>
 
       {/* Profile sheet */}
-      {showProfile && (
-        <Profile onClose={() => setShowProfile(false)} />
-      )}
+      {showProfile && <Profile onClose={() => setShowProfile(false)} />}
+
+      {/* Leaderboard sheet */}
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
 
       {/* Create quest sheet */}
       {showCreate && (
-        <CreateQuest
-          onClose={() => setShowCreate(false)}
-          onCreated={handleQuestCreated}
-        />
+        <CreateQuest onClose={() => setShowCreate(false)} onCreated={handleQuestCreated} />
       )}
 
       {/* Admin panel */}
-      {showAdmin && (
-        <AdminPanel onClose={handleAdminClose} />
-      )}
+      {showAdmin && <AdminPanel onClose={handleAdminClose} />}
 
       {/* Toast */}
       {toast && (
@@ -128,11 +112,16 @@ const styles = {
     height: '100vh',
     overflow: 'hidden',
   },
-  profileButton: {
+  topButtons: {
     position: 'absolute',
     top: '56px',
     right: '16px',
     zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  topButton: {
     width: '44px',
     height: '44px',
     borderRadius: '50%',
@@ -202,7 +191,7 @@ const styles = {
     position: 'absolute',
     top: '70px',
     left: '16px',
-    right: '16px',
+    right: '76px',
     zIndex: 3000,
     padding: '14px 20px',
     borderRadius: '14px',
