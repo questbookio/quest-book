@@ -125,7 +125,7 @@ function CreateQuest({ onClose, onCreated }) {
         difficulty, xp, cost: cost === 'Custom' ? customCost.trim() : cost, tags: selectedTags,
         requiredItems: requiredItems ? requiredItems.split(',').map(i => i.trim()).filter(Boolean) : [],
         bonusObjectives: bonusObjectives ? bonusObjectives.split(',').map(i => i.trim()).filter(Boolean) : [],
-        radius: 200, createdBy: user.uid, createdAt: serverTimestamp(), status: 'active',
+        radius: 200, createdBy: user.uid, createdAt: serverTimestamp(), status: 'pending',
       });
       onCreated();
     } catch (err) { console.error('Error creating quest:', err); setErrors(['Something went wrong. Try again.']); setSubmitting(false); }

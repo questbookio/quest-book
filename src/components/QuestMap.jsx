@@ -138,10 +138,9 @@ function QuestMap() {
     const fetchQuests = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'quests'));
-        const questData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const questData = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(q => !q.status || q.status === 'active');
         setQuests(questData);
       } catch (err) {
         console.error('Error fetching quests:', err);

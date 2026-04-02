@@ -5,12 +5,22 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import QuestMap from './QuestMap.jsx';
 import XpBar from './XpBar.jsx';
 import CreateQuest from './CreateQuest.jsx';
+import AdminPanel from './AdminPanel.jsx';
+
+// Admin UIDs - add your Firebase user ID here
+const ADMIN_UIDS = [
+  'RkUgAmQMLxOB9OM1z4cd9GJqqM53', // your account
+];
 
 function Home() {
   const { user } = useAuth();
   const [levelUpData, setLevelUpData] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [toast, setToast] = useState(null);
+
+  const isAdmin = ADMIN_UIDS.includes(user?.uid);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -23,6 +33,12 @@ function Home() {
 
   const handleQuestCreated = () => {
     setShowCreate(false);
+    setToast('Quest submitted! It will appear on the map after review.');
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleAdminClose = () => {
+    setShowAdmin(false);
     setRefreshKey(k => k + 1);
   };
 
@@ -32,6 +48,16 @@ function Home() {
 
       {/* XP Bar */}
       <XpBar onLevelUp={handleLevelUp} />
+
+      {/* Admin button */}
+      {isAdmin && (
+        <button
+          onClick={() => setShowAdmin(true)}
+          style={styles.adminButton}
+        >
+          🛡️
+        </button>
+      )}
 
       {/* Create quest button */}
       <button
@@ -52,6 +78,18 @@ function Home() {
           onClose={() => setShowCreate(false)}
           onCreated={handleQuestCreated}
         />
+      )}
+
+      {/* Admin panel */}
+      {showAdmin && (
+        <AdminPanel onClose={handleAdminClose} />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={styles.toast}>
+          <span style={styles.toastText}>{toast}</span>
+        </div>
       )}
 
       {/* Level up notification */}
@@ -75,6 +113,23 @@ const styles = {
     width: '100%',
     height: '100vh',
     overflow: 'hidden',
+  },
+  adminButton: {
+    position: 'absolute',
+    bottom: '150px',
+    right: '16px',
+    zIndex: 1000,
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(10,10,15,0.9)',
+    backdropFilter: 'blur(10px)',
+    fontSize: '20px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   createButton: {
     position: 'absolute',
@@ -110,6 +165,26 @@ const styles = {
     fontSize: '12px',
     fontWeight: '600',
     cursor: 'pointer',
+    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  toast: {
+    position: 'absolute',
+    top: '70px',
+    left: '16px',
+    right: '16px',
+    zIndex: 3000,
+    padding: '14px 20px',
+    borderRadius: '14px',
+    background: 'rgba(255,200,87,0.12)',
+    border: '1px solid rgba(255,200,87,0.25)',
+    backdropFilter: 'blur(10px)',
+    textAlign: 'center',
+    animation: 'slideUp 0.3s ease-out',
+  },
+  toastText: {
+    color: '#ffc857',
+    fontSize: '14px',
+    fontWeight: '600',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
   },
   levelUpOverlay: {
