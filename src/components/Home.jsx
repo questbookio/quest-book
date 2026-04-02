@@ -130,7 +130,7 @@ const styles = {
   },
   profileButton: {
     position: 'absolute',
-    top: '16px',
+    top: '56px',
     right: '16px',
     zIndex: 1000,
     width: '44px',
