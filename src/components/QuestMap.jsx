@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { acceptQuest, getAllQuestStatuses, completeQuestWithPhoto } from '../services/questService.js';
+import { logActivity } from '../services/socialService.js';
 import QuestDetail from './QuestDetail.jsx';
 import QuestActive from './QuestActive.jsx';
 
@@ -202,6 +203,17 @@ function QuestMap() {
     setSelectedQuest(null);
     setCompletedMessage({ xp: quest.xp });
     setTimeout(() => setCompletedMessage(null), 3000);
+
+    // Log to activity feed
+    try {
+      const { doc: fbDoc, getDoc: fbGetDoc } = await import('firebase/firestore');
+      const userRef = fbDoc(db, 'users', user.uid);
+      const userSnap = await fbGetDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      await logActivity(user.uid, userData.displayName, userData.avatar, quest);
+    } catch (err) {
+      console.error('Error logging activity:', err);
+    }
   };
 
   const handleCloseAll = () => {

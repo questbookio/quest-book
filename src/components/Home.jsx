@@ -8,6 +8,7 @@ import CreateQuest from './CreateQuest.jsx';
 import AdminPanel from './AdminPanel.jsx';
 import Profile from './Profile.jsx';
 import Leaderboard from './Leaderboard.jsx';
+import SocialFeed from './SocialFeed.jsx';
 
 const ADMIN_UIDS = [
   'RkUgAmQMLxOB9OM1z4cd9GJqqM53',
@@ -20,6 +21,7 @@ function Home() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showFeed, setShowFeed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState(null);
 
@@ -56,6 +58,7 @@ function Home() {
       <div style={styles.topButtons}>
         <button onClick={() => setShowProfile(true)} style={styles.topButton}>👤</button>
         <button onClick={() => setShowLeaderboard(true)} style={styles.topButton}>🏆</button>
+        <button onClick={() => setShowFeed(true)} style={styles.topButton}>📡</button>
       </div>
 
       {/* Admin button */}
@@ -69,18 +72,11 @@ function Home() {
       {/* Logout button */}
       <button onClick={handleLogout} style={styles.logoutButton}>Log Out</button>
 
-      {/* Profile sheet */}
+      {/* Sheets */}
       {showProfile && <Profile onClose={() => setShowProfile(false)} />}
-
-      {/* Leaderboard sheet */}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
-
-      {/* Create quest sheet */}
-      {showCreate && (
-        <CreateQuest onClose={() => setShowCreate(false)} onCreated={handleQuestCreated} />
-      )}
-
-      {/* Admin panel */}
+      {showFeed && <SocialFeed onClose={() => setShowFeed(false)} />}
+      {showCreate && <CreateQuest onClose={() => setShowCreate(false)} onCreated={handleQuestCreated} />}
       {showAdmin && <AdminPanel onClose={handleAdminClose} />}
 
       {/* Toast */}
