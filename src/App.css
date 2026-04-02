@@ -2,18 +2,38 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
   background: #0a0a0f;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  position: fixed;
 }
 
-input:focus {
+/* Prevent mobile zoom on double tap */
+button, input, textarea, select {
+  touch-action: manipulation;
+}
+
+/* Input focus styling */
+input:focus, textarea:focus {
   border-color: rgba(255, 200, 87, 0.4) !important;
+  outline: none;
 }
 
+/* Prevent text selection on buttons */
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Animations */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -34,7 +54,35 @@ input:focus {
   to { opacity: 1; }
 }
 
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* Leaflet container */
 .leaflet-container {
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* Hide scrollbar but keep scrollable */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area padding for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

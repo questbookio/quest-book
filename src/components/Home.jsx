@@ -14,6 +14,7 @@ import Achievements from './Achievements.jsx';
 import AchievementToast from './AchievementToast.jsx';
 import FeaturedQuests from './FeaturedQuests.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
+import NavBar from './NavBar.jsx';
 import { getUnreadCount } from '../services/notificationService.js';
 
 const ADMIN_UIDS = [
@@ -49,7 +50,6 @@ function Home() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // Poll unread count
   useEffect(() => {
     if (!user) return;
     const fetchUnread = async () => {
@@ -105,38 +105,30 @@ function Home() {
       {/* XP Bar */}
       <XpBar onLevelUp={handleLevelUp} />
 
-      {/* Top right buttons */}
-      <div style={styles.topButtons}>
-        <button onClick={() => setShowProfile(true)} style={styles.topButton}>👤</button>
-        <button onClick={() => setShowLeaderboard(true)} style={styles.topButton}>🏆</button>
-        <button onClick={() => setShowFeed(true)} style={styles.topButton}>📡</button>
-        <button onClick={() => setShowAchievements(true)} style={styles.topButton}>🏅</button>
-        <div style={styles.bellWrapper}>
-          <button onClick={() => setShowNotifications(true)} style={styles.topButton}>🔔</button>
-          {unreadCount > 0 && (
-            <div style={styles.unreadBadge}>
-              <span style={styles.unreadText}>{unreadCount > 9 ? '9+' : unreadCount}</span>
-            </div>
-          )}
-        </div>
+      {/* Navigation bar */}
+      <NavBar
+        onProfile={() => setShowProfile(true)}
+        onLeaderboard={() => setShowLeaderboard(true)}
+        onFeed={() => setShowFeed(true)}
+        onAchievements={() => setShowAchievements(true)}
+        onNotifications={() => setShowNotifications(true)}
+        unreadCount={unreadCount}
+      />
+
+      {/* Left side action buttons */}
+      <div style={styles.leftButtons}>
+        <button onClick={() => setShowFeatured(true)} style={styles.leftButton} title="Featured Quests">⭐</button>
+        <button onClick={() => setShowAdventure(true)} style={styles.adventureButton} title="Adventure Mode">⚡</button>
       </div>
 
-      {/* Featured quests button */}
-      <button onClick={() => setShowFeatured(true)} style={styles.featuredButton}>⭐</button>
-
-      {/* Adventure mode button */}
-      <button onClick={() => setShowAdventure(true)} style={styles.adventureButton}>⚡</button>
-
-      {/* Admin button */}
-      {isAdmin && (
-        <button onClick={() => setShowAdmin(true)} style={styles.adminButton}>🛡️</button>
-      )}
-
-      {/* Create quest button */}
-      <button onClick={() => setShowCreate(true)} style={styles.createButton}>＋</button>
-
-      {/* Logout button */}
-      <button onClick={handleLogout} style={styles.logoutButton}>Log Out</button>
+      {/* Right side action buttons */}
+      <div style={styles.rightButtons}>
+        {isAdmin && (
+          <button onClick={() => setShowAdmin(true)} style={styles.rightButton} title="Moderation">🛡️</button>
+        )}
+        <button onClick={() => setShowCreate(true)} style={styles.createButton} title="Create Quest">＋</button>
+        <button onClick={handleLogout} style={styles.logoutButton}>Log Out</button>
+      </div>
 
       {/* Sheets */}
       {showProfile && <Profile onClose={() => setShowProfile(false)} />}
@@ -180,59 +172,20 @@ const styles = {
   container: {
     position: 'relative',
     width: '100%',
-    height: '100vh',
+    height: '100dvh',
     overflow: 'hidden',
   },
-  topButtons: {
+  leftButtons: {
     position: 'absolute',
-    top: '56px',
-    right: '16px',
+    bottom: '90px',
+    left: '16px',
     zIndex: 1000,
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
-  },
-  topButton: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '50%',
-    border: '1px solid rgba(255,255,255,0.15)',
-    background: 'rgba(10,10,15,0.9)',
-    backdropFilter: 'blur(10px)',
-    fontSize: '20px',
-    cursor: 'pointer',
-    display: 'flex',
+    gap: '10px',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  bellWrapper: {
-    position: 'relative',
-  },
-  unreadBadge: {
-    position: 'absolute',
-    top: '-2px',
-    right: '-2px',
-    minWidth: '18px',
-    height: '18px',
-    borderRadius: '9px',
-    background: '#f87171',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0 4px',
-    border: '2px solid #0a0a0f',
-  },
-  unreadText: {
-    fontSize: '10px',
-    fontWeight: '800',
-    color: '#ffffff',
-    lineHeight: 1,
-  },
-  featuredButton: {
-    position: 'absolute',
-    bottom: '150px',
-    left: '16px',
-    zIndex: 1000,
+  leftButton: {
     width: '44px',
     height: '44px',
     borderRadius: '50%',
@@ -246,10 +199,6 @@ const styles = {
     justifyContent: 'center',
   },
   adventureButton: {
-    position: 'absolute',
-    bottom: '90px',
-    left: '16px',
-    zIndex: 1000,
     width: '52px',
     height: '52px',
     borderRadius: '50%',
@@ -262,11 +211,17 @@ const styles = {
     justifyContent: 'center',
     boxShadow: '0 4px 20px rgba(192,132,252,0.3)',
   },
-  adminButton: {
+  rightButtons: {
     position: 'absolute',
-    bottom: '150px',
+    bottom: '24px',
     right: '16px',
     zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    alignItems: 'center',
+  },
+  rightButton: {
     width: '44px',
     height: '44px',
     borderRadius: '50%',
@@ -280,10 +235,6 @@ const styles = {
     justifyContent: 'center',
   },
   createButton: {
-    position: 'absolute',
-    bottom: '90px',
-    right: '16px',
-    zIndex: 1000,
     width: '52px',
     height: '52px',
     borderRadius: '50%',
@@ -300,17 +251,13 @@ const styles = {
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
   },
   logoutButton: {
-    position: 'absolute',
-    bottom: '28px',
-    right: '16px',
-    zIndex: 1000,
-    padding: '10px 16px',
-    borderRadius: '16px',
+    padding: '8px 14px',
+    borderRadius: '14px',
     border: '1px solid rgba(239,68,68,0.2)',
     background: 'rgba(10,10,15,0.9)',
     backdropFilter: 'blur(10px)',
     color: '#f87171',
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: '600',
     cursor: 'pointer',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -358,27 +305,10 @@ const styles = {
     animation: 'slideUp 0.4s ease-out',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
   },
-  levelUpIcon: {
-    fontSize: '56px',
-    marginBottom: '16px',
-  },
-  levelUpTitle: {
-    fontSize: '12px',
-    fontWeight: '800',
-    color: '#ffc857',
-    letterSpacing: '3px',
-    marginBottom: '8px',
-  },
-  levelUpName: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: '8px',
-  },
-  levelUpSubtext: {
-    fontSize: '13px',
-    color: 'rgba(255,255,255,0.4)',
-  },
+  levelUpIcon: { fontSize: '56px', marginBottom: '16px' },
+  levelUpTitle: { fontSize: '12px', fontWeight: '800', color: '#ffc857', letterSpacing: '3px', marginBottom: '8px' },
+  levelUpName: { fontSize: '28px', fontWeight: '700', color: '#ffffff', marginBottom: '8px' },
+  levelUpSubtext: { fontSize: '13px', color: 'rgba(255,255,255,0.4)' },
 };
 
 export default Home;
