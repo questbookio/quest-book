@@ -8,9 +8,12 @@ import {
   updateDoc,
   query,
   where,
+  increment,
   serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const CREATOR_XP_REWARD = 50; // XP creator earns when someone completes their quest
 
 // Accept a quest
 export async function acceptQuest(userId, quest) {
@@ -69,7 +72,58 @@ export async function completeQuestWithPhoto(userId, questId, photoFile, xp) {
     });
   }
 
+  // Increment completion count on the quest itself
+  const globalQuestRef = doc(db, 'quests', questId);
+  const globalQuestSnap = await getDoc(globalQuestRef);
+
+  if (globalQuestSnap.exists()) {
+    await updateDoc(globalQuestRef, {
+      completionCount: increment(1),
+    });
+
+    // Reward the creator (if it's not the creator completing their own quest)
+    const questData = globalQuestSnap.data();
+    if (questData.createdBy && questData.createdBy !== userId) {
+      const creatorRef = doc(db, 'users', questData.createdBy);
+      const creatorSnap = await getDoc(creatorRef);
+
+      if (creatorSnap.exists()) {
+        await updateDoc(creatorRef, {
+          xp: (creatorSnap.data().xp || 0) + CREATOR_XP_REWARD,
+          creatorXpEarned: (creatorSnap.data().creatorXpEarned || 0) + CREATOR_XP_REWARD,
+        });
+      } else {
+        await setDoc(creatorRef, {
+          xp: CREATOR_XP_REWARD,
+          creatorXpEarned: CREATOR_XP_REWARD,
+          questsCompleted: 0,
+          createdAt: serverTimestamp(),
+        });
+      }
+    }
+  }
+
   return photoURL;
+}
+
+// Get creator display info
+export async function getCreatorInfo(creatorId) {
+  if (!creatorId) return null;
+  try {
+    const userRef = doc(db, 'users', creatorId);
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      return {
+        xp: data.xp || 0,
+        questsCompleted: data.questsCompleted || 0,
+        creatorXpEarned: data.creatorXpEarned || 0,
+      };
+    }
+  } catch (err) {
+    console.error('Error getting creator info:', err);
+  }
+  return null;
 }
 
 // Get all active (accepted) quests for a user
@@ -98,7 +152,7 @@ export async function getQuestStatus(userId, questId) {
   return 'available';
 }
 
-// Mark a quest as completed (without photo - for future use)
+// Mark a quest as completed (without photo)
 export async function completeQuest(userId, questId) {
   const docRef = doc(db, 'users', userId, 'activeQuests', questId);
   await updateDoc(docRef, {

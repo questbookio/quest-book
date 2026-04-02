@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../firebase';
+import { getCreatorInfo } from '../services/questService.js';
 
 const CATEGORY_COLORS = {
   exploration: '#34d399',
@@ -22,14 +24,38 @@ const DIFFICULTY_COLORS = {
   Hard: '#f87171',
 };
 
+const LEVELS = [
+  { name: 'Explorer', minXp: 0, icon: '🧭' },
+  { name: 'Adventurer', minXp: 1000, icon: '⚔️' },
+  { name: 'Legend', minXp: 5000, icon: '👑' },
+];
+
+function getLevel(xp) {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= LEVELS[i].minXp) return LEVELS[i];
+  }
+  return LEVELS[0];
+}
+
 function QuestDetail({ quest, questStatus, distance, formatDistance, onClose, onAccept, onOpenActive }) {
   if (!quest) return null;
+
+  const [creatorInfo, setCreatorInfo] = useState(null);
+
+  useEffect(() => {
+    if (quest.createdBy) {
+      getCreatorInfo(quest.createdBy).then(info => setCreatorInfo(info));
+    }
+  }, [quest.createdBy]);
 
   const catColor = CATEGORY_COLORS[quest.category] || '#ffc857';
   const catIcon = CATEGORY_ICONS[quest.category] || '📍';
   const diffColor = DIFFICULTY_COLORS[quest.difficulty] || '#fbbf24';
   const isAccepted = questStatus === 'accepted';
   const isCompleted = questStatus === 'completed';
+  const isOwnQuest = quest.createdBy === auth.currentUser?.uid;
+
+  const creatorLevel = creatorInfo ? getLevel(creatorInfo.xp) : null;
 
   return (
     <>
@@ -66,6 +92,29 @@ function QuestDetail({ quest, questStatus, distance, formatDistance, onClose, on
           <div style={styles.distanceRow}>
             <span style={styles.distanceIcon}>📍</span>
             <span style={styles.distanceText}>{formatDistance(distance)}</span>
+          </div>
+        )}
+
+        {/* Creator info */}
+        {quest.createdBy && (
+          <div style={styles.creatorRow}>
+            <div style={styles.creatorLeft}>
+              <span style={styles.creatorIcon}>
+                {creatorLevel ? creatorLevel.icon : '🧭'}
+              </span>
+              <div>
+                <p style={styles.creatorLabel}>
+                  {isOwnQuest ? 'Created by you' : 'Community Quest'}
+                </p>
+                {creatorLevel && (
+                  <p style={styles.creatorRank}>{creatorLevel.name}</p>
+                )}
+              </div>
+            </div>
+            <div style={styles.completionCount}>
+              <span style={styles.completionNumber}>{quest.completionCount || 0}</span>
+              <span style={styles.completionLabel}>completed</span>
+            </div>
           </div>
         )}
 
@@ -252,7 +301,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    marginBottom: '16px',
+    marginBottom: '12px',
   },
   distanceIcon: {
     fontSize: '14px',
@@ -261,6 +310,49 @@ const styles = {
     fontSize: '13px',
     color: 'rgba(255,255,255,0.45)',
     fontWeight: '500',
+  },
+  creatorRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '10px 14px',
+    borderRadius: '12px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    marginBottom: '16px',
+  },
+  creatorLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  creatorIcon: {
+    fontSize: '22px',
+  },
+  creatorLabel: {
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: '500',
+  },
+  creatorRank: {
+    fontSize: '11px',
+    color: 'rgba(255,200,87,0.5)',
+    fontWeight: '600',
+  },
+  completionCount: {
+    textAlign: 'center',
+  },
+  completionNumber: {
+    display: 'block',
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#ffc857',
+  },
+  completionLabel: {
+    fontSize: '10px',
+    color: 'rgba(255,255,255,0.3)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
   hintSection: {
     marginBottom: '20px',
