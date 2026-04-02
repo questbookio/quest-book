@@ -6,10 +6,10 @@ import QuestMap from './QuestMap.jsx';
 import XpBar from './XpBar.jsx';
 import CreateQuest from './CreateQuest.jsx';
 import AdminPanel from './AdminPanel.jsx';
+import Profile from './Profile.jsx';
 
-// Admin UIDs - add your Firebase user ID here
 const ADMIN_UIDS = [
-  'RkUgAmQMLxOB9OM1z4cd9GJqqM53', // your account
+  'RkUgAmQMLxOB9OM1z4cd9GJqqM53',
 ];
 
 function Home() {
@@ -17,6 +17,7 @@ function Home() {
   const [levelUpData, setLevelUpData] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState(null);
 
@@ -49,6 +50,14 @@ function Home() {
       {/* XP Bar */}
       <XpBar onLevelUp={handleLevelUp} />
 
+      {/* Profile button */}
+      <button
+        onClick={() => setShowProfile(true)}
+        style={styles.profileButton}
+      >
+        👤
+      </button>
+
       {/* Admin button */}
       {isAdmin && (
         <button
@@ -71,6 +80,11 @@ function Home() {
       <button onClick={handleLogout} style={styles.logoutButton}>
         Log Out
       </button>
+
+      {/* Profile sheet */}
+      {showProfile && (
+        <Profile onClose={() => setShowProfile(false)} />
+      )}
 
       {/* Create quest sheet */}
       {showCreate && (
@@ -113,6 +127,23 @@ const styles = {
     width: '100%',
     height: '100vh',
     overflow: 'hidden',
+  },
+  profileButton: {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    zIndex: 1000,
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(10,10,15,0.9)',
+    backdropFilter: 'blur(10px)',
+    fontSize: '20px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   adminButton: {
     position: 'absolute',
